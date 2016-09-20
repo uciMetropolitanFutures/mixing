@@ -55,6 +55,7 @@ shinyServer(function(input, output) {
   ########### CLUSTERS MAP ###########
   
   finalMap <- reactive ({
+    withProgress(message='Please Wait: Map Loading', {
     # Create map 
     m = leaflet() %>%  setView(lng=center$xcoord, lat=center$ycoord , zoom=10) %>% addTiles() %>%
     addPolygons(data=age, stroke=T, weight=.7, color="black", fillOpacity=0.4, opacity=1, group="Age Mixing Clusters",
@@ -79,22 +80,26 @@ shinyServer(function(input, output) {
                   fillColor = ~colorFactor("RdYlBu", dfnuis$LISA_NUIS)(dfnuis$LISA_NUIS), popup=~LISA_NUIS) %>%
     addPolygons(data=green, stroke=T, weight=.7, color="black", fillOpacity=0.4, opacity=1, group="Green Space L.U. Mixing Clusters",
                   fillColor = ~colorFactor("RdYlBu", dfgreen$LISA_GREEN)(dfgreen$LISA_GREEN), popup=~LISA_GREEN) %>%
-      
+
     addLegend("bottomright", pal=colorFactor("RdYlBu", dfage$LISA), values=dfage$LISA, opacity=0.75, title="Significant Cluster Types:") %>%
       
     addLayersControl(
       baseGroups = c("Age Mixing Clusters", "Race Mixing Clusters", "Education Mixing Clusters", "Income Mixing Clusters", "Housing Age Mixing Clusters", 
-                     "Dwelling Unit Type Mixing Clusters", "Land Use Mixing (Overall) Clusters", "Jobs-Housing L.U. Mixing Clusters", "Local Services L.U. Mixing Clusters",
-                     "Nuisance Land Use Mixing Clusters", "Green Space L.U. Mixing Clusters"),
+                     "Land Use Mixing (Overall) Clusters", "Jobs-Housing L.U. Mixing Clusters", "Local Services L.U. Mixing Clusters",
+                     "Nuisance Land Use Mixing Clusters", "Green Space L.U. Mixing Clusters", "Dwelling Unit Type Mixing Clusters"),
       options = layersControlOptions(collapsed = FALSE))
+    })
   })
   
   # Generate Map Output
   output$clusterMap = renderLeaflet(finalMap())
   
+  
+  
+  
   ########## VALUES MAP #################
   # Grab Inputs - ALL
-  options = reactiveValues(choose="age_k4ent")
+  options = reactiveValues(choose="Shape_Area") #Shape_Area chosen as a placeholder since it's numeric 
   observeEvent(input$mixgo, {
     mixlink = switch(input$mix, "Age"="age_k4", "Race"="race_k5", "Education"="educ_k5", "Income"="inc_k5", "Dwelling Unit Age"="resage_", "Land Use (Overall)"="LU_k5", "Housing Type"="ht_k4")
     options$choose = paste(mixlink, "ent", sep="")
@@ -115,6 +120,7 @@ shinyServer(function(input, output) {
   })
     # Observe function to add polygons and legend to basemap based on color palette 
   observe({
+    withProgress(message='Please Wait: Map Loading', {
     pal <- colorpal()
     datause <- dfch[,grep(options$choose, colnames(dfch))]
     lab <- switch(options$choose, 'age_k4ent'='Age Mixing', 'race_k5ent'='Race Mixing', 'educ_k5ent'='Education Mixing', 'inc_k5ent'='Income Mixing', 'resage_ent'='Dwelling Age Mixing', 'LU_k5ent'='Land Use Mixing', 'ht_k4ent'='Housing Type Mixing', 'totemp'='Total Employment', 'medhhinc'='Median Household Income', 'avgval'='Average Home Value', 'tpctres'='Percent Residential Space', 'tpctopen'='Percent Open Space', 'tblack'='Percent Black', 'tlatino'='Percent Latino', 'tpctund20_'='Percent < 20 yrs old', 'tpctovr65'='Percent > 65 yrs old', 'timm'='Percent Foreign Born', 'tpden'='Population Density (pop/acre)', 'tunemp'='Unemployment Rate', 'towner'='Percent Homeowners', 'tocc'='Percent Occupancy', 'thowlng'='Average Length of Residence')
@@ -122,6 +128,7 @@ shinyServer(function(input, output) {
       addPolygons(data=ch, stroke=T, weight=1, fillColor = ~pal(datause), color="black",
                   fillOpacity=0.6, opacity=1, popup=~NAME10) %>%
       addLegend("bottomleft", pal=pal, values=datause, opacity=0.75, title=lab)
+    })
   })  
   
   
